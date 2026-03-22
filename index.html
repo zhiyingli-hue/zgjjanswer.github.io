@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MRT黄线体验站 | 收集你的答案</title>
+    <!-- 引入 QRCode.js 库用于生成二维码 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs2-fix@0.0.1/qrcode.min.js"></script>
+    <!-- 可选字体与样式重置 -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #fff5e8 0%, #ffe6d5 100%);
+            /* 暖色调渐变背景 */
+            font-family: 'Segoe UI', 'Roboto', 'Noto Sans', system-ui, -apple-system, 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 主卡片容器 */
+        .card {
+            max-width: 750px;
+            width: 100%;
+            background-color: rgba(255, 248, 235, 0.95);
+            border-radius: 64px 48px 72px 48px;
+            box-shadow: 0 25px 45px rgba(255, 140, 50, 0.2), 0 8px 18px rgba(0, 0, 0, 0.05);
+            padding: 30px 28px 45px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(0px);
+            border: 1px solid #ffd7a5;
+        }
+
+        /* 顶部标题区域 */
+        .title-area {
+            text-align: center;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .main-title {
+            font-size: 42px;
+            font-weight: 900;
+            color: #000000;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: #000000;
+            text-shadow: 2px 2px 8px rgba(255, 200, 120, 0.3);
+            word-break: keep-all;
+        }
+
+        /* 辅助装饰小火车（静态可爱元素） */
+        .train-deco {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            opacity: 0.8;
+        }
+
+        .train-deco span {
+            font-size: 28px;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));
+            transition: transform 0.2s ease;
+        }
+
+        .train-deco span:hover {
+            transform: translateY(-3px);
+        }
+
+        /* 收集框 (大号长方形) */
+        .input-wrapper {
+            margin: 20px 0 30px;
+            position: relative;
+            background: #fffef7;
+            border-radius: 48px;
+            padding: 12px;
+            box-shadow: 0 8px 20px rgba(255, 140, 60, 0.15), inset 0 1px 0 #fff8;
+        }
+
+        .answer-input {
+            width: 100%;
+            min-height: 160px;   /* 保证至少两行大容量 */
+            padding: 20px 24px;
+            font-size: 24px;
+            font-family: '宋体', 'SimSun', 'Noto Serif SC', 'Times New Roman', serif;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #2c2418;
+            background-color: #fffbf0;
+            border: 2px solid #ffe0b5;
+            border-radius: 42px;
+            resize: vertical;
+            outline: none;
+            transition: all 0.25s;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .answer-input:focus {
+            border-color: #ffae5a;
+            box-shadow: 0 0 0 3px rgba(255, 170, 70, 0.3);
+            background-color: #fffffa;
+        }
+
+        /* 仅限制汉字输入提示 */
+        .hint-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            margin-left: 18px;
+            font-size: 14px;
+            color: #b87c4a;
+            background: #fff0e2;
+            width: fit-content;
+            padding: 5px 14px;
+            border-radius: 40px;
+        }
+
+        .hint-text:before {
+            content: "✍️";
+            font-size: 16px;
+        }
+
+        /* 卡通列车点缀 (围绕收集框的小元素) */
+        .deco-trains {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            margin-top: -12px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .deco-left, .deco-right {
+            font-size: 42px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .deco-left { align-self: flex-start; }
+        .deco-right { align-self: flex-end; }
+
+        /* 提交按钮——暖色气泡 */
+        .button-area {
+            text-align: center;
+            margin: 20px 0 20px;
+        }
+
+        .submit-btn {
+            background: radial-gradient(circle at 30% 25%, #ffc48a, #ffa559);
+            border: none;
+            width: 180px;
+            padding: 16px 0;
+            border-radius: 120px;
+            cursor: pointer;
+            box-shadow: 0 12px 18px -6px rgba(255, 110, 30, 0.4), 0 4px 0 #b25d1a inset, 0 -2px 0 rgba(0,0,0,0.05) inset;
+            transition: transform 0.15s ease, box-shadow 0.1s ease;
+            font-size: 28px;
+            font-weight: bold;
+            color: #000000;
+            background-color: #ffaa66;
+            letter-spacing: 2px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 6px 12px -4px rgba(255, 80, 20, 0.5);
+        }
+
+        /* 感谢框 (模态样式，浮层轻提示) */
+        .thanks-toast {
+            visibility: hidden;
+            min-width: 280px;
+            background-color: #ffedd5;
+            color: #bc5a2c;
+            text-align: center;
+            border-radius: 60px;
+            padding: 16px 28px;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            font-size: 20px;
+            font-weight: 600;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+            backdrop-filter: blur(8px);
+            background: rgba(255, 237, 200, 0.96);
+            border-left: 6px solid #ffa24b;
+            z-index: 1000;
+            transition: visibility 0s, opacity 0.25s, transform 0.25s;
+            opacity: 0;
+            white-space: nowrap;
+            font-family: system-ui, 'Segoe UI', 'Noto Sans';
+        }
+
+        .thanks-toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* 二维码区域 */
+        .qrcode-container {
+            margin-top: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border-top: 2px dashed #ffd1a4;
+            padding-top: 28px;
+        }
+
+        .qr-box {
+            background: white;
+            padding: 12px;
+            border-radius: 32px;
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.05);
+            display: inline-block;
+        }
+
+        #qrcode {
+            width: 130px;
+            height: 130px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-label {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #b45a2b;
+            background: #fff0e0;
+            padding: 5px 14px;
+            border-radius: 60px;
+            font-weight: 500;
+        }
+
+        /* 移动端友好 */
+        @media (max-width: 550px) {
+            .card {
+                padding: 22px 20px 35px;
+            }
+            .main-title {
+                font-size: 32px;
+            }
+            .answer-input {
+                font-size: 20px;
+                min-height: 140px;
+            }
+            .submit-btn {
+                width: 160px;
+                font-size: 24px;
+                padding: 12px 0;
+            }
+            .thanks-toast {
+                font-size: 16px;
+                white-space: nowrap;
+                padding: 12px 20px;
+            }
+            .deco-left, .deco-right {
+                font-size: 32px;
+            }
+        }
+
+        /* 防止超出 */
+        footer {
+            font-size: 12px;
+            text-align: center;
+            color: #daa06a;
+            margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <!-- 页面顶部标题 加粗加大黑色 -->
+    <div class="title-area">
+        <div class="main-title">你认为，MRT黄线地铁<br>怎么样呢？</div>
+        <div class="train-deco">
+            <span>🚆</span> <span>🚇</span> <span>✨</span> <span>🇨🇳</span> <span>🚈</span>
+        </div>
+    </div>
+
+    <!-- 收集框主体 + 卡通列车点缀 -->
+    <div class="input-wrapper">
+        <!-- 边缘装饰: 小火车图标围绕 -->
+        <div class="deco-trains">
+            <div class="deco-left">🚂🚃</div>
+            <div class="deco-right">🚃🚄</div>
+        </div>
+        <textarea id="answerInput" class="answer-input" placeholder="在这里写下你的想法... 用汉字告诉我们你的感受~" rows="3"></textarea>
+        <div class="hint-text">仅限汉字输入，分享你的真实体验吧</div>
+        <!-- 再添加两个小车轮点缀在左下右下 -->
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; padding: 0 12px;">
+            <span style="font-size: 20px;">🚉</span>
+            <span style="font-size: 20px;">🚞</span>
+        </div>
+    </div>
+
+    <!-- 气泡提交按钮 -->
+    <div class="button-area">
+        <button id="submitBtn" class="submit-btn">提交</button>
+    </div>
+
+    <!-- 感谢弹框 (非模态，轻提示) -->
+    <div id="thanksMessage" class="thanks-toast">已经收到您的答案，谢谢！</div>
+
+    <!-- 二维码展示区：便于手机扫描进入此页面 -->
+    <div class="qrcode-container">
+        <div class="qr-box">
+            <div id="qrcode"></div>
+        </div>
+        <div class="qr-label">📱 手机扫码 · 分享感受</div>
+        <footer>🚆 中国建造 · 便捷出行</footer>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 获取DOM元素
+        const textarea = document.getElementById('answerInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const thanksDiv = document.getElementById('thanksMessage');
+
+        // 1. 限制输入内容为仅汉字（中文字符范围 \u4e00-\u9fff 以及全角标点兼容，但主要限制非汉字）
+        // 同时保留删除、回车等编辑操作，实时过滤非汉字（但为了用户体验，采用输入后替换非汉字，但保留粘贴过滤）
+        // 更好的体验：允许临时输入但提交时验证？根据描述仅限汉字，我们做实时友好清洗，但不清洗标点？ 
+        // 描述 "仅限汉字" 一般指提交内容只含汉字。为严谨，输入时自动清除非汉字（但允许空格和基本中文标点？但"仅限汉字"通常只汉字。
+        // 为了使界面更友好，我们在失去焦点/提交时做最终提醒，实时也可以过滤，但用户会困惑。可做非汉字提醒，但不强制删除，提交时校验。
+        // 按常规交互：提交时检测是否全部为汉字（包括中文常用标点？描述严格"仅限汉字"所以最好是只允许汉字）。
+        // 为了体验优雅，输入时如果粘贴包含非汉字，提示并清除。但用户有可能想用简单感叹号，但课程更强调汉字练习，我们执行提交时严格过滤。
+        // 设计更贴近教学: 提交前过滤，若非纯汉字则提醒修正。
+        
+        // 检测是否为纯汉字(允许全角空格？不，只要汉字字符集 + 可选的中文句号、问号等？ 但为了契合场景，最好只接受汉字。
+        // 但学生可能写“很快很方便”，都是汉字，满足。但如果有数字或英文就拦截。
+        function isPureChinese(str) {
+            // 去除首尾空白后检测每个字符是否属于常用汉字区块（包含扩展基本区）
+            // 同时也保留全角标点？但描述“仅限汉字”，最严格只保留CJK统一表意文字。
+            // 但教学上可能出现简单句号，若我们允许句号问号更友好；但因规定明确，我们仅允许汉字。
+            // 允许中文空格？其实全角空格也算空白，最好去掉空格再判断全汉字。
+            const trimmed = str.trim();
+            if (trimmed.length === 0) return false;
+            // 正则：只允许 \u4e00-\u9fff 基本汉字
+            const chineseRegex = /^[\u4e00-\u9fff]+$/;
+            return chineseRegex.test(trimmed);
+        }
+
+        // 显示感谢框并自动3秒消失
+        function showThanks() {
+            thanksDiv.classList.add('show');
+            setTimeout(() => {
+                thanksDiv.classList.remove('show');
+            }, 2800);
+        }
+
+        // 储存答案 (可扩展后台，本程序纯前端收集 + 可增加本地记录)
+        // 为了模拟收集，可以将答案保存到 localStorage 或导出，不涉及后端但符合老师收集需求，提交后展示感谢框。
+        // 增加一个收集数组，可在控制台查看收集结果，方便老师。
+        let collectedAnswers = [];
+
+        // 提交逻辑
+        function handleSubmit() {
+            let rawValue = textarea.value;
+            // 去掉首尾空格
+            let userAnswer = rawValue.trim();
+            
+            // 空值校验
+            if (userAnswer === "") {
+                // 显示简短提醒
+                const tempTip = document.createElement('div');
+                tempTip.innerText = '✏️ 请写下你的评价（仅限汉字）';
+                tempTip.style.position = 'fixed';
+                tempTip.style.bottom = '100px';
+                tempTip.style.left = '50%';
+                tempTip.style.transform = 'translateX(-50%)';
+                tempTip.style.backgroundColor = '#ffecb3';
+                tempTip.style.color = '#c25d2e';
+                tempTip.style.padding = '10px 20px';
+                tempTip.style.borderRadius = '50px';
+                tempTip.style.fontSize = '16px';
+                tempTip.style.zIndex = '1001';
+                tempTip.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                document.body.appendChild(tempTip);
+                setTimeout(() => tempTip.remove(), 1800);
+                return;
+            }
+            
+            // 校验是否纯汉字
+            if (!isPureChinese(userAnswer)) {
+                // 提示用户需要输入汉字
+                const errorMsg = document.createElement('div');
+                errorMsg.innerText = '📝 请只使用汉字回答（例如：很快、很方便、舒服）';
+                errorMsg.style.position = 'fixed';
+                errorMsg.style.bottom = '100px';
+                errorMsg.style.left = '50%';
+                errorMsg.style.transform = 'translateX(-50%)';
+                errorMsg.style.backgroundColor = '#ffe0b5';
+                errorMsg.style.color = '#bc5a2c';
+                errorMsg.style.padding = '10px 20px';
+                errorMsg.style.borderRadius = '50px';
+                errorMsg.style.fontSize = '15px';
+                errorMsg.style.fontWeight = '500';
+                errorMsg.style.zIndex = '1001';
+                errorMsg.style.whiteSpace = 'nowrap';
+                errorMsg.style.fontFamily = 'system-ui';
+                document.body.appendChild(errorMsg);
+                setTimeout(() => errorMsg.remove(), 2500);
+                return;
+            }
+            
+            // 收集答案
+            const answerRecord = {
+                content: userAnswer,
+                timestamp: new Date().toLocaleString('zh-CN', {hour12: false}),
+            };
+            collectedAnswers.push(answerRecord);
+            
+            // 可选控制台输出收集结果，方便老师查阅
+            console.log(`[MRT黄线收集站] 新答案: "${userAnswer}" 时间: ${answerRecord.timestamp}`);
+            console.log(`当前共收集 ${collectedAnswers.length} 条答案:`, collectedAnswers);
+            
+            // 显示感谢框
+            showThanks();
+            
+            // 清空输入框 (但不清空也可，老师也可以保留输入框内容？按体验通常清空)
+            textarea.value = '';
+            // 可选增加一个小动画，恢复默认高度
+            textarea.style.transition = 'all 0.1s';
+            
+            // 可额外在页面右下角显示一条“已记录”小提示，但感谢框足够了
+            // 同时为了满足收集答案的功能，也可以将答案导出（隐形存储）。教师可通过控制台复制收集结果。
+            // 如果老师想要长期保存，可增加localStorage聚合，这里已满足收集需求。
+            // 增加一个彩蛋：如果收集条数达到5，提示老师查看控制台
+            if (collectedAnswers.length === 3 || collectedAnswers.length === 5) {
+                setTimeout(() => {
+                    const info = document.createElement('div');
+                    info.innerText = `💡 已有 ${collectedAnswers.length} 位同学分享，太棒啦！`;
+                    info.style.position = 'fixed';
+                    info.style.bottom = '160px';
+                    info.style.left = '50%';
+                    info.style.transform = 'translateX(-50%)';
+                    info.style.backgroundColor = '#ffddbb';
+                    info.style.padding = '6px 16px';
+                    info.style.borderRadius = '40px';
+                    info.style.fontSize = '14px';
+                    info.style.zIndex = '1000';
+                    document.body.appendChild(info);
+                    setTimeout(() => info.remove(), 2000);
+                }, 600);
+            }
+        }
+        
+        // 绑定提交按钮事件
+        submitBtn.addEventListener('click', handleSubmit);
+        
+        // 增加Enter快捷键？但textarea换行需要 Ctrl+Enter 或者防止误触，不用Enter直接提交，以免干扰多行输入。
+        // 可选：按 Ctrl+Enter 提交提高效率
+        textarea.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleSubmit();
+            }
+        });
+        
+        // 实时给输入框提示：只允许汉字输入，但是友好建议，用户粘贴时如果包含非汉字我们在提交时提醒，不过体验更自然
+        // 为了更好的引导，添加输入建议（不会强制删除，但告知只能汉字，已经通过hint-text提示）
+        
+        // 可选：添加一个focus时提醒
+        textarea.addEventListener('focus', () => {
+            // 轻提示
+        });
+        
+        // ---------- 生成当前页面URL的二维码 ----------
+        // 使用 qrcodejs2 库，需要挂载到 #qrcode 容器
+        // 当前页面完整 URL (动态获取，确保扫码能进入收集页)
+        const currentUrl = window.location.href;
+        // 清空容器再生成
+        const qrcodeContainer = document.getElementById("qrcode");
+        qrcodeContainer.innerHTML = ""; // 清空原有内容
+        
+        // 使用 QRCode 构造函数 (库已引入)
+        try {
+            new QRCode(qrcodeContainer, {
+                text: currentUrl,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#fff8ef",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        } catch(e) {
+            // 备用方法手动生成简单二维码信息显示（若库加载失败显示文本）
+            qrcodeContainer.innerHTML = `<div style="font-size:12px;text-align:center;">扫码访问<br>${currentUrl.substring(0,30)}...</div>`;
+            console.warn("QRCode库异常", e);
+        }
+        
+        // 附加：页面加载时显示欢迎小提示，但不干扰
+        const initMsg = document.createElement('div');
+        initMsg.innerText = '🚈 用汉字分享你对MRT黄线的印象吧！';
+        initMsg.style.position = 'fixed';
+        initMsg.style.bottom = '20px';
+        initMsg.style.right = '20px';
+        initMsg.style.backgroundColor = '#ffefcf';
+        initMsg.style.padding = '6px 14px';
+        initMsg.style.borderRadius = '40px';
+        initMsg.style.fontSize = '13px';
+        initMsg.style.color = '#b45f2b';
+        initMsg.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+        initMsg.style.zIndex = '999';
+        initMsg.style.fontWeight = 'normal';
+        document.body.appendChild(initMsg);
+        setTimeout(() => initMsg.style.opacity = '0', 3500);
+        setTimeout(() => initMsg.remove(), 4300);
+        
+        // 添加防重复提交简单锁（可选但友好）
+        let isSubmitting = false;
+        const originalHandler = handleSubmit;
+        window.handleSubmit = function() {
+            if (isSubmitting) return;
+            isSubmitting = true;
+            originalHandler();
+            setTimeout(() => { isSubmitting = false; }, 1000);
+        };
+        submitBtn.onclick = () => window.handleSubmit();
+        textarea.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                window.handleSubmit();
+            }
+        });
+    })();
+</script>
+</body>
+</html>
